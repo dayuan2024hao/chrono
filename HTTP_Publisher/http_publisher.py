@@ -4,42 +4,28 @@ import time
 import json
 from datetime import datetime
 
-# ==========================================
-# 1. 配置区域
-# ==========================================
 
-# 【重要】这是你的后端地址（中转站）
+# 后端地址
 API_URL = "http://127.0.0.1:5000/api/sensor_data"
-
-# 文件路径 (保持你的绝对路径)
+# 文件路径
 FILE_INT = r"C:\Users\cww36\Downloads\human_activity_sensor_data_in_home_environment\human_activity_raw_sensor_data\sensor_sample_int.csv"
 FILE_FLOAT = r"C:\Users\cww36\Downloads\human_activity_sensor_data_in_home_environment\human_activity_raw_sensor_data\sensor_sample_float.csv"
-
-# 播放速度 (1=实时, 100=极速)
+# 播放速度
 SPEED_RATE = 100 
 
 def send_to_backend(data):
-    """
-    发送数据到你的后端中转站
-    """
     try:
-        # 这里的 timeout 设置短一点，防止网络卡顿时模拟器阻塞
         response = requests.post(API_URL, json=data, timeout=2)
         
         if response.status_code != 200:
-            print(f"❌ 后端返回错误: {response.status_code}")
+            print(f"后端返回错误: {response.status_code}")
             
     except Exception as e:
-        # 如果后端没开，只打印一次警告，避免刷屏
-        # print(f"⚠️ 连接后端失败: {e}")
+        print(f"连接后端失败: {e}")
         pass
 
 def process_file(file_path, is_int_file):
-    """
-    读取长表 CSV 并推送
-    """
-    print(f"🚀 开始处理: {file_path}")
-    
+    print(f"开始处理: {file_path}")
     # 分块读取，每次 2000 行，平衡内存和速度
     chunk_iter = pd.read_csv(file_path, chunksize=2000)
     
@@ -84,19 +70,15 @@ def process_file(file_path, is_int_file):
                 "timestamp": timestamp_str,
                 "status": "triggered" if (is_digital and value == 1) else "normal"
             }
-
-            # --- 4. 发送 ---
             send_to_backend(payload)
-            
-            # 每 1000 条打印一次进度
             if total_rows % 1000 == 0:
                 print(f"   ...已发送 {total_rows} 条数据...")
 
 if __name__ == "__main__":
-    print("🟢 模拟器启动...")
+    print("模拟器启动...")
     try:
         process_file(FILE_INT, is_int_file=True)
-        # process_file(FILE_FLOAT, is_int_file=False) # 需要时可以取消注释
-        print("✅ 发送完毕。")
+        process_file(FILE_FLOAT, is_int_file=False)
+        print("发送完毕。")
     except KeyboardInterrupt:
-        print("\n🛑 停止。")
+        print("\n停止。")
