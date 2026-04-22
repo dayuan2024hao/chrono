@@ -1,0 +1,17 @@
+# Web框架
+fastapi==0.104.1
+
+# ASGI服务器
+uvicorn[standard]==0.24.0
+
+# 数据库ORM
+sqlalchemy==2.0.23
+
+# MySQL驱动
+pymysql==1.1.0
+
+# 定时任务调度器
+apscheduler==3.10.4
+
+# 数据验证
+pydantic==2.5.0
