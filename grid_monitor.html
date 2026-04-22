@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧社区网格实时监控矩阵</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1890ff;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .elder-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .elder-card:hover {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .elder-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .status-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-light.normal {
+            background-color: #52c41a;
+        }
+
+        .status-light.warning {
+            background-color: #faad14;
+        }
+
+        .status-light.danger {
+            background-color: #f5222d;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245, 34, 45, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(245, 34, 45, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(245, 34, 45, 0);
+            }
+        }
+
+        .sensor-icons {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+
+        .sensor-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sensor-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+            position: relative;
+        }
+
+        .water-icon {
+            color: #1890ff;
+        }
+
+        .water-icon.ripple {
+            animation: ripple 2s infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        .door-icon {
+            color: #52c41a;
+        }
+
+        .door-icon.open {
+            color: #faad14;
+        }
+
+        .electric-icon {
+            color: #faad14;
+        }
+
+        .activity-icon {
+            color: #722ed1;
+        }
+
+        .sensor-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .daily-report {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .daily-report h4 {
+            margin-bottom: 5px;
+            color: #3890d;
+        }
+
+        .daily-report-content {
+            white-space: pre-wrap;
+        }
+
+        .sidebar {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+            transition: right 0.3s ease;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .timeline {
+            margin-top: 20px;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #1890ff;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 15px;
+            width: 2px;
+            height: calc(100% + 10px);
+            background-color: #e8e8e8;
+        }
+
+        .timeline-item:last-child::after {
+            display: none;
+        }
+
+        .timeline-time {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .timeline-event {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .timeline-status {
+            font-size: 12px;
+            color: #1890ff;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .refresh-btn:hover {
+            background-color: #40a9ff;
+        }
+
+        .refresh-btn.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin: 30px 0 20px;
+            color: #222;
+        }
+
+       
+        .ai-box { margin-top:30px; background:#fff; padding:20px; border-radius:8px; }
+        .ai-input { width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-bottom:10px; }
+        .ai-btn { background:#1890ff; color:#fff; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; }
+        .ai-reply { margin-top:15px; padding:15px; background:#f5f7fa; border-radius:6px; white-space:pre-wrap; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <h1>智慧社区网格实时监控矩阵</h1>
+
+            <!-- ====================== 老人实时状态监控 ====================== -->
+            <div class="section-title">老人实时状态监控</div>
+
+            <div class="status-bar" style="background-color: #f0f2f5; padding: 10px; border-radius: 4px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <span>数据接收状态：</span>
+                    <span :style="{ color: dailyReportReceived ? '#52c41a' : '#f5222d' }">
+                        {{ dailyReportReceived ? '已接收' : '未接收' }}
+                    </span>
+                    <span v-if="lastReceivedTime" style="margin-left: 10px; font-size: 12px; color: #666;">
+                        最后接收时间：{{ lastReceivedTime }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid-container">
+                <div 
+                    v-for="elder in elders" 
+                    :key="elder.elder_id"
+                    class="elder-card"
+                    :class="{ 'danger': elder.status === 'danger' }"
+                    @click="showAlertTimeline(elder.alert_id)"
+                >
+                    <div class="card-header">
+                        <span class="elder-name">{{ elder.name }}</span>
+                        <div class="status-light" :class="elder.status"></div>
+                    </div>
+                    <div class="sensor-icons">
+                        <div class="sensor-item">
+                            <div class="sensor-icon water-icon" :class="{ 'ripple': waterAnimation[elder.elder_id] }">&#128167;</div>
+                            <span class="sensor-label">用水</span>
+                        </div>
+                        <div class="sensor-item">
+                            <div class="sensor-icon electric-icon">&#128267;</div>
+                            <span class="sensor-label">用电</span>
+                        </div>
+                        <div class="sensor-item">
+                            <div class="sensor-icon door-icon" :class="{ 'open': doorStatus[elder.elder_id] }">&#128719;</div>
+                            <span class="sensor-label">门磁</span>
+                        </div>
+                        <div class="sensor-item">
+                            <div class="sensor-icon activity-icon">&#128366;</div>
+                            <span class="sensor-label">活动</span>
+                        </div>
+                    </div>
+                    <div class="daily-report" v-if="dailyReports[elder.elder_id]">
+                        <h4>亲情日报</h4>
+                        <div class="daily-report-content">{{ dailyReports[elder.elder_id] }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====================== 亲情日报 ====================== -->
+            <div class="section-title">亲情日报</div>
+
+           
+            <div class="daily-report" style="margin-top:20px;">
+                <h4>亲情日报</h4>
+                <div class="daily-report-content">{{ dailyReportContent }}</div>
+            </div>
+
+           
+            <div class="ai-box">
+                <div class="section-title">AI智能问答</div>
+                <input v-model="userQuestion" class="ai-input" placeholder="例如：张爷爷今天怎么样？高血压注意什么？">
+                <button class="ai-btn" @click="sendToAI">发送问题</button>
+                <div class="ai-reply" v-if="aiReply">{{ aiReply }}</div>
+            </div>
+
+        </div>
+
+        <div class="sidebar" :class="{ 'active': sidebarActive }">
+            <div class="sidebar-header">
+                <h3>Agent处置动态</h3>
+                <button class="close-btn" @click="closeSidebar">&times;</button>
+            </div>
+            <div v-if="currentAlertTimeline">
+                <h4>报警ID: {{ currentAlertTimeline.alert_id }}</h4>
+                <div class="timeline">
+                    <div v-for="(item, index) in currentAlertTimeline.timeline" :key="index" class="timeline-item">
+                        <div class="timeline-time">{{ item.time }}</div>
+                        <div class="timeline-event">{{ item.event }}</div>
+                        <div class="timeline-status">{{ item.status }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="overlay" :class="{ 'active': sidebarActive }" @click="closeSidebar"></div>
+
+        <button class="refresh-btn" :class="{ 'loading': isLoading }" @click="refreshData">
+            {{ isLoading ? '⟳' : '↻' }}
+        </button>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    elders: [],
+                    dailyReports: {},
+                    dailyReportContent: "", 
+                    waterAnimation: {},
+                    doorStatus: {},
+                    sidebarActive: false,
+                    currentAlertTimeline: null,
+                    isLoading: false,
+                    mainApiUrl: 'http://10.40.156.213:8000',
+                    dailyReportApiUrl: 'http://10.40.156.146:5000',
+                    dailyReportReceived: false,
+                    lastReceivedTime: null,
+
+                   
+                    userQuestion: "",
+                    aiReply: ""
+                };
+            },
+            mounted() {
+                this.refreshData();
+                setInterval(() => this.refreshData(), 30000);
+            },
+            methods: {
+                async refreshData() {
+                    this.isLoading = true;
+                    try {
+                        await this.fetchEldersStatus();
+                    } catch (e) {}
+                    try {
+                        await this.fetchDailyReports();
+                    } catch (e) {}
+                    this.isLoading = false;
+                },
+                async fetchEldersStatus() {
+                    try {
+                        const response = await fetch(`${this.mainApiUrl}/api/elders/status`);
+                        const data = await response.json();
+                        if (data.code === 0) {
+                            this.elders = data.data;
+                            this.elders.forEach(elder => {
+                                this.doorStatus[elder.elder_id] = Math.random() > 0.7;
+                            });
+                        }
+                    } catch (error) {
+                        console.error('获取老人状态失败', error);
+                    }
+                },
+                async fetchDailyReports() {
+                    try {
+                        console.log("正在请求数据...");
+                        const res = await fetch(`${this.dailyReportApiUrl}/api/get_result`, {
+                            method: "GET",
+                            mode: "cors"
+                        });
+
+                        const data = await res.json();
+                        console.log("返回数据：", data);
+
+                        let content = "";
+                        if (data.downstream_output) {
+                            content = data.downstream_output;
+                        } else if (data.data) {
+                            content = data.data;
+                        } else if (typeof data === "string") {
+                            content = data;
+                        } else {
+                            content = JSON.stringify(data, null, 2);
+                        }
+
+                        this.dailyReportReceived = true;
+                        this.lastReceivedTime = new Date().toLocaleString();
+
+                    
+                        if (this.elders.length > 0) {
+                            this.elders.forEach(elder => {
+                                this.dailyReports[elder.elder_id] = content;
+                            });
+                        }
+
+                    
+                        this.dailyReportContent = content;
+
+                        console.log("✅ 数据接收成功！");
+
+                    } catch (error) {
+                        console.error("❌ 数据失败：", error);
+                        this.dailyReportReceived = false;
+                        this.dailyReportContent = "亲情日报暂未生成";
+                        if (this.elders.length > 0) {
+                            this.elders.forEach(elder => {
+                                this.dailyReports[elder.elder_id] = "亲情日报暂未生成";
+                            });
+                        }
+                    }
+                },
+
+                
+                async sendToAI() {
+                    if (!this.userQuestion) return;
+                    try {
+                        let res = await fetch(this.dailyReportApiUrl + "/api/ai_chat", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ question: this.userQuestion })
+                        });
+                        let data = await res.json();
+                        this.aiReply = data.reply || "暂无回答";
+                    } catch (e) {
+                        this.aiReply = "连接AI服务失败";
+                    }
+                },
+
+                async showAlertTimeline(alertId) {
+                    if (!alertId) return;
+                    try {
+                        const response = await fetch(`${this.mainApiUrl}/api/alert/${alertId}/timeline`);
+                        const data = await response.json();
+                        this.currentAlertTimeline = data;
+                        this.sidebarActive = true;
+                    } catch (error) {
+                        console.error('获取报警时间轴失败:', error);
+                    }
+                },
+                closeSidebar() {
+                    this.sidebarActive = false;
+                    this.currentAlertTimeline = null;
+                },
+                simulateWaterAnimation() {
+                    if (this.elders.length === 0) {
+                        setTimeout(() => this.simulateWaterAnimation(), 2000);
+                        return;
+                    }
+                    this.elders.forEach(elder => {
+                        if (Math.random() > 0.8) {
+                            this.waterAnimation[elder.elder_id] = true;
+                            setTimeout(() => {
+                                this.waterAnimation[elder.elder_id] = false;
+                            }, 2000);
+                        }
+                    });
+                    setTimeout(() => this.simulateWaterAnimation(), 5000);
+                }
+            },
+            created() {
+                this.simulateWaterAnimation();
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
